@@ -1,0 +1,956 @@
+web后端
+
+falsk框架：轻量级网站框架
+
+一个简单的网站搭建：
+from flask import Flask
+
+app=Flask(__name__) :创建flask对象
+
+@app.route('/') :添加路由
+
+def index():    定义视图
+
+app.run(debug=True) :运行flask
+
+flask对象：
+（1）flask对象中有socket，能够与浏览器建立连接
+（2）能够接收浏览器数据，并且发送数据给浏览器
+（3）flask能够解决http协议
+
+
+如何渲染前端写好的页面：
+（1）在test.py同级目录下创建templates和static文件夹
+（2）把*.html文件放在templates文件夹中
+（3）把其他文件放在static文件夹中（如：css js image fonts）
+（4）构建一个视图函数并添加路由
+
+例：在网上下载一个html5模板，按以上要求放好文件
+from flask import Flask
+from flask import render_templatae  :jinja2提供的 检索html文件返回字符串
+
+app=Flask(__name__)
+
+@app.route('/bp')
+def bp():
+	return render_template('index.html')
+
+app.run(debug=True,host='0.0.0.0',port='9999')  :host:局域网可连接   port:设置端口号 默认5000端口
+
+修改在网上下的模板中html中一些文件的路径（如css，js，images）：
+	vim编辑器 命令行模式  %s/css\//templates\//css\//g  
+	第一个css是原文件路径 templates\//css\/ 真实路径  \:是转义字符 将/变成单纯的斜线 没有反斜(\)的斜线(/)是分割 
+	g：是选中整行
+
+补充 要想局域网内用户访问你的网站：
+（1）关闭防火墙：systemctl stop firewalld  或  systemctl disable firewalld
+（2）关闭selinux: vim /etc/selinux/config  将selinux值改成disable    重启后生效 
+（3）查看selinux状态：getenforce
+
+
+动态路由：动态路由变量有三种类型（1）path 字符串    （2）int 整型    （3）float 浮点型
+
+动态路由创建：
+	@app.route('/add/<int:a>/<int:b>')
+	def add(a,b):
+		return str(a+b)
+	
+	访问时：127.0.0.1：5000/add/3/4
+有静态路由时：静态路由优先
+
+
+
+项目一般格式：
+	（1）首先创建项目文件夹 01base
+	（2）项目文件夹中创建app文件夹和run.py文件
+	（3）在app文件夹中创建__init__.py views.py  static文件夹  templates文件夹
+	（4）在__init__.py创建flask实例 
+	（5）在views.py中添加路由 视图函数
+	（6）在run.py中运行flask
+
+(1)__init__.py中：
+	
+	from flask import Flask
+	
+	app=Flask(__name__)
+	
+	from . import views
+
+(2)viwes.py中：
+	
+	from app import app
+	
+	@app.route('/')
+
+	def index():
+		return 'ok'
+
+(3)run.py中：
+
+	from app import app
+	
+	app.run(debug=True)
+
+在项目文件夹下执行: ~/venv/bin/python run.py
+
+
+模板：即动态页面
+
+例：框架同上面
+
+在templates文件夹中 编辑index.html文件
+(1)index.py中：
+<html>
+<head>
+<title>自我介绍</title>
+</head>
+
+<body>
+<h1>我叫{{h1}}</h1>
+<p>我是</p>
+
+</body>
+
+</html>
+
+(2)views.py中：
+
+from flask import Flask
+from flask import render_template
+
+@app.route('/')
+def index():
+	return render_template('index.html',title='自我介绍',h1='张三',p='演员')
+
+@app.route('/a')
+def index():
+	return render_template('index.html',title='自我介绍',h1='李四',p='戏子')
+
+(3)其他一样
+
+补充 yum -y install tree   用来查看文件  直接 tree
+
+
+模板变量：
+
+列表： 在student.html中遍历列表
+	{% for s in slist %}
+		{{s}}<br>
+	{% endfor %}  ：结束
+
+	在views.py中：
+	@app.route('/student')
+	def student():
+		s_list=['张三','李四','王五']
+		return render_template('student.html',slist=s_list)
+
+
+字典： 在teacher.html中：
+	<html>
+	<body>
+		{% for t in td %}
+		{{t}}<br>
+		{{t['name']}}<br>
+		{{t['age']}}<br>
+		{% if t['sex']== 1 %}
+			男
+		{% else %}
+			女
+
+		{% endif %}
+			
+
+	</body>
+	</html>
+
+	在views.py中：
+	@app.route('/'teacher)
+	def teacher()：
+		d1={'name':'张三','age':15,'sex':1}
+		d2={'name':'李四','age':14,'sex':2}
+		d3={'name':'王五','age':15,'sex':2}
+		d4={'name':'赵六','age':15,'sex':1}
+		tdict=[d1,d2,d3,d4]
+		return render_template('teacher.html',td=tdict)
+
+
+基模板: 模板的父类 基类  里面设有块  块内的内容可以改变
+
+定义一个块：{% block xxx  %}  
+	    {% end block %}
+
+
+{{super()}}:继承父块中的内容 并且不更改父块中的内容
+
+
+例：
+
+base.html(基模板)中:
+<html>
+<head>
+<title>这是一个父模板</title>
+</head>
+<body>
+----------------------这里是导航栏-----首页-----设备------报警------<br>
+--------------------------------------------------------------------<br>
+
+{% block content %}  :content块
+<h1>这是标题</h1>
+<p>这是一段文字</p>
+{% endblock %}
+
+{% block page %}    :page块
+大家好 xxxx
+{% endblock %}
+
+--------------------------------------------------------------------<br>
+---------------这里是footer-------关于我们-------联系我们-----------<br>
+</body>
+
+</html>
+
+新html中:
+{% etxend 'base.html' %}
+
+{% block content %}
+	{{super()}}<br>
+	我终于会用块了<br>
+{% endblock %}
+
+{% block page %}
+	{{super()}}
+	我还行
+{% endblock %}
+
+
+
+
+
+
+
+
+
+重点：
+
+表单：
+
+
+基本步骤：
+	1.安装flask_wtf 模块  ~/venv/bin/pip install flask_wtf
+	2.构建表单  参考app/forms.py 
+	3.渲染表单  参考app/views.py中register函数
+	4.密钥      参考config.py  app/__init__.py
+
+01form
+  |
+  |--app
+  |   |--forms.py
+  |   |--__init__.py
+  |   |--views.py
+  |   |--static
+  |   |--templates
+  |	    |--login.html	
+  |         |--register.html
+  |
+  |--config.py
+  |--run.py
+
+(1)forms.py:
+
+from flask_wtf import FlaskForm
+from wtforms import StringField, BooleanField, PasswordField    : PasswordField(密码变****)
+from wtforms import SubmitField                                 ：提交按钮
+from wtforms.validators import DataRequired, Length, Email      ：设置不能为空  长度  Email格式
+from wtforms.validators import EqualTo                          ：密码与前一个相同
+
+class RegisterForm(FlaskForm) :
+	#为了安全要进行表单验证
+	name = StringField(label='名字', validators=[DataRequired(), Length(1, 64)])
+	email = StringField(label='邮箱', validators=[DataRequired(), Length(1, 128), Email('邮箱好像不对')])
+	password = PasswordField(label='密码', validators=[DataRequired(), Length(6, 128)])
+	password_again = PasswordField(label='密码', validators=[EqualTo('password', '两次密码不一致，请重新输入')])
+	submit = SubmitField(label='提交')
+
+
+
+
+(2)__init__.py:
+
+
+from flask import Flask
+
+app = Flask(__name__)
+
+#加载配置
+app.config.from_object('config')  :加载密钥配置
+
+from . import views
+
+
+(3)views.py:
+
+
+from app import app
+from flask import render_template
+from .forms import RegisterForm
+from flask import redirect       ：重定项
+from flask import url_for
+
+#这个函数在两种情况下会被调用
+#1.用户访问register路由（请求表单）
+#2.提交表单
+@app.route('/register', methods=['GET', 'POST'])
+def register() :
+	form = RegisterForm()
+	if form.validate_on_submit() :
+		#这段代码只有在提交表单的情况下才执行
+		name = form.name.data
+		email = form.email.data
+		password = form.password.data
+		password_again = form.password_again.data
+		print(name, email, password, password_again)
+		form.name.data = ""      ：清空
+		form.email.data = ""     ：清空
+		return redirect(url_for('.login'))   ：根据函数名查找路由
+	
+	return render_template('register.html', form=form)
+
+
+@app.route('/login')
+def login() :
+	return render_template('login.html')
+
+(4)config.py:
+
+WTF_CSRF_ENABLE=True   :开启csrf保护
+
+SECRET_KEY='xxxxxxxxxxxxxxx'   :生成令牌时候需要的密钥
+
+
+(5)run.py:
+
+from app import app
+
+app.run(debug=True)
+
+
+
+
+
+(6)register.html:
+
+<html>
+
+<body>
+
+	<form action="" method="post">
+		<!--令牌-->
+		{{form.hidden_tag()}}                   :调用密钥
+		{{form.name.label}}:{{form.name}}<br>
+		{{form.email.label}}:{{form.email}}<br>
+		{% for e in form.email.errors %}
+			{{e}}<br>
+		{% endfor %}
+		{{form.password.label}}:{{form.password}}<br>
+		{{form.password_again.label}}:{{form.password_again}}<br>
+		{% for e in form.password_again.errors %}
+			{{e}}<br>
+		{% endfor %}
+		{{form.submit}}<br>
+	</form>
+</body>
+
+</html>
+
+
+(7)login.html:
+
+<html>
+
+<body>
+	您好！这里是登陆页面，请登陆。
+</body>
+
+</html>
+
+
+
+
+
+
+
+数据库：
+
+MVC:Model View Contrllor  数据 视图 控制器
+
+SQL数据库 ： mariadb
+
+Flask-SQLAlchemy 是一个Flask扩展，简化了在Flask程序中是哦那个SQLAlchemy的操作
+SQLAlchemy是一个很强大的关系型数据库框架，支持多种数据库后台
+SQLAlachemy提供了高层ORM，也提供了使用数据库原生SQL的低层功能
+安装Flask-SQLAlchemy:
+	~/venv/bin/pip install flask-sqlalchemy  PyMysql	
+
+ORM & ODM
+对象关系映射（Object-Relational Mapper,ORM）
+对象文档映射（Object-Document Mapper,ODM）
+
+
+安装mariadb数据库 ：   首先查找 ：yum list |grep mariadb
+		       然后 yum -y install mariadb-server
+
+			systemctl start mariadb   ：开启数据库
+			systemctl enable mariadb  ：开机自启动
+			
+			登陆mysql:mysql -uroot -p密码
+	
+	创建库:create database 库名 default character set utf8_general_ci;  设置数据库输入编码为utf8
+	显示库:show databases;
+	进入库:use 库名
+	显示表:show tables;
+	查看表:select * from 表名
+
+
+基本步骤：
+#0.添加数据库配置（参考config.py）
+#1.创建sqlarlchmey对象db（用来连接数据库））
+#2.构建数据模型类(db.Model，参考app/models.py)
+#3.在run.py中导入数据模型类
+#4.执行db.create_all()创建表
+#  如果表已经存在则不重新创建（即使类修改了也没用）
+#  db.drop_all() 删除所有表
+
+(1)config.py中添加配置：
+
+	#表单
+	WTF_CSRF_ENABLE=True
+	SECRET_KEY='iot.embsky.com'
+
+	#数据库
+	#数据库IP  端口号 用户名 密码 库(需要用sql语句创建)
+	SQLALCHEMY_DATABASE_URI='mysql://root:123456@localhost/embsky'
+
+	SQLALCHEMY_TRACK_MODIFICATIONS = False  ：通知机制 没什么用所以关掉  数据库修改会接到通知
+
+
+(2)models.py中：
+
+from app import db
+
+#继承了db.Model的类叫做数据模型类
+#这个类将来在数据库中对应一张表，类改变了表就改变了
+#类中的每一个子段在表中对应一个属性（列）
+class Student(db.Model) :
+	#指定表名
+	__tablename__ = 'students'
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String(64))
+	email = db.Column(db.String(128))
+	b_id = db.Column(db.Integer, db.ForeignKey('bteachers.id'))
+
+	#在这里其实还有一个字段叫做bteacher
+
+class BTeacher(db.Model) :
+	__tablename__ = 'bteachers'
+	#主键
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String(64))
+
+	#反向关系：
+	#1.在这里添加一个字段叫做students
+	#2.在学生类中添加一个字段叫做bteacher
+	#3.但，这两个字段都不会出现在数据库中，之后在对象中，方便编程
+	students = db.relationship('Student', backref='bteacher')
+	#理由1：本来就存在一对多的关系  bteachers.id------>students.b_id
+	#理由2：一个老师可以对多个学生 所以在老师类加students表示所有学生
+	#理由3：一个老师可以对多个学生 所以在学生类加bteacher表示学生的老师
+	
+
+
+(3)run.py中：
+
+
+from app import db
+from app import app
+import pymysql
+pymysql.install_as_MySQLdb()
+
+from app.models import Student, BTeacher
+
+#根据当前命名空间中的模型类来创建表
+db.create_all()
+
+#app.run(debug=True)
+
+
+
+数据库的操作（增删改查）：
+利用 ‘事物’
+
+例：
+
+from run import db 
+from run import Student
+
+增：
+s1=Student()
+s1.name='xxx'
+s1.email='xxxx'
+db.session.add(s1)  :把数据放到一个事物中
+db.session.commit()  ：往数据库中提交事物 事物中可以有很多对象
+
+改：
+s1.name='wang'
+db.session.add(s1)
+db.session.commit()
+
+删：
+db.session.delete(s1)
+de.session.commit()
+
+查：
+Student.query.filter_by()  ：括号里写条件 不能写 id>x, id<x, 只能写id=x 
+Student.query.all()    : 查询所有
+
+Student.query.filter(Student.name=='s1').all()
+Student.query.filter(Student.name=='s1',Student.id>5).all()
+Student.query.filter(Student.name>'s1').all()
+Student.query.filter(Student.like(s1%)).all()
+.......
+
+
+
+
+
+flask框架;
+bkProject/
+├── app
+│ ├── email.py
+│ ├── __init__.py
+│ ├── main
+│ │ ├── errors.py
+│ │ ├── forms.py
+│ │ ├── __init__.py
+3/111
+│ │ └── views.py
+│ ├── models.py
+│ ├── static
+│ └── templates
+├── config.py
+├── manage.py
+├── tests
+│ ├── __init__.py
+│ └── test.py
+
+
+构建需求文件：
+linux下：  ./venv/bin/pip freeze >requirements.txt
+windows下： venv\Scripts\pip.exe freeze >requirements.txt
+
+
+注意：如果现在有一个新的虚拟环境需要安装需求的模块，则可以执行pip install -r
+requirements.txt
+
+1.添加配置文件：config.py
+
+class Config:
+    #表单需要
+    WTF_CSRF_ENABLED=True
+    SECRET_KEY='www.embsky.com'
+
+    #邮件需要
+    MAIL_SERVER='smtp.163.com'
+    MAIL_PORT='25'
+    MAIL_USE_TLS=True  #邮件加密
+    MAIL_USENAME='caojian2231@163.com'
+    MAIL_PASSWORD='caojian521'  #授权码 参考flask基础笔记
+
+    #数据库需要
+    #可以设置为True来启用在每个请求中自动提交数据库更改
+    SQLALCHEMY_COMMIT_ON_TEARDOWN=True
+    SQLALCHEMY_TRACK_MODIFICATIONS=False
+
+    @staticmethod
+    def init_app(app):
+        pass
+
+
+class DevelopConfig(Config):
+    DEBUG=True
+    #数据库需要
+    SQLALCHEMY_DATABASE_URI='mysql://root:123456@172.25.8.9/develop_db'
+
+class TestConfig(Config):
+    TEST=True
+    #数据库需要
+    SQLALCHEMY_DATABASE_URI='mysql://root:123456@localhost/test_db'
+
+class ProductionConfig(Config):
+    #数据库需要
+    SQLALCHEMY_DATABASE_URI='mysql://root:123456@localhost/product_db'
+
+config={
+        'develop':DevelopConfig,
+        'test':TestConfig,
+        'product':ProductionConfig,
+        'default':DevelopConfig,
+    }
+
+
+
+2.编写创建app函数：app/__init__.py:
+
+from flask import render_template
+from flask_bootstrap import Bootstrap #前端框架(JS,CSS)
+from flask_mail import Mail,Message #邮件类型是Message类型
+from flask_moment import Moment #能够把utc时间渲染称当地时间（JS）
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from config import config #导入配置字典
+
+bootstrap=Bootstrap()  #变量名字必须这样 不能改变
+mail=Mail()
+moment=Moment()  #变量名不能变
+db=SQLAlchemy()
+
+#一个创建app的函数
+def create_app(config_name):
+    app=Flask(__name__)
+    app.config.from_object(config[config_name])
+    bootstrap.init_app(app)
+    mail.init_app(app)
+    moment.init_app(app)
+    db.init_app(app)
+
+    #在此注册蓝本
+    #一个app可以包含多个蓝本 每个蓝本可以实现不同的功能
+    from .main import main as main_blueprint
+    app.register_blueprint(main_blueprint)
+
+    return app
+
+
+补充：
+	蓝本（main）：只有调用create_app的时候才会创建app，然后在去创建路由，这样的代码不漂亮。
+	      在这里提同一个更好的办法，创建蓝本。
+	      蓝本可以注册为app的一部分，专门负责处理路由和错误页面问题。
+	      蓝本可以写成一个文件，也可是一个包。
+
+
+
+3.给蓝本添加视图函数：app/main/views.py
+from datetime import datetime
+from flask import render_template,sessions,redirect,url_for,abort,flash
+from . import main
+from app import db
+
+@main.route('/',methods=['GET','POST'])
+def index():
+    return render_template('main/index.html') #render_template会去app/templates下找模板
+
+
+4.为视图创建模板
+基于bootstrap创建一个基模板 : app/templates/base.html :
+
+<!--必须在创建app的时候创建bootstrap(Bootstrap类型的对象)才可以使用-->
+{% extends "bootstrap/base.html" %}
+{% block title %}
+一支独秀
+{% endblock %}
+{% block navbar %}
+<div class="navbar navbar-inverse" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle"
+                    data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">梦幻空间</a>
+        </div>
+        <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="/">主页</a></li>
+                <li><a href="/">论坛</a></li>
+                <li><a href="/">新闻</a></li>
+                <li><a href="/">热点</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <!--这里自定义一个块-->
+        {% block page_content %}
+        <!--这里是默认内容-->
+        {% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+
+5.继承基模板:   app/templates/index.html 
+<!--在app/templates下找base.html-->
+{% extends 'base.html' %}
+{% block page_content %}
+    大家好这里是阳光社区 欢迎你<br>
+    联系电话：123456789
+{% endblock %}
+
+6.编写出错处理方法: 
+(1)app/main/errors.py
+from flask import render_template, redirect,url_for
+from . import main
+
+#能够截获所有蓝本中发生的404错误
+#当用户访问的路由不存在或者调用abort（404）都会跳到此处
+@main.app_errorhandler(404)
+def error_handler_404(e):
+    return render_template('404.html')
+
+#当用户访问的视图函数发生异常或者调用abort（500）都会跳到此处
+@main.app_errorhandler(500)
+def error_handler_500(e):
+    return render_template('500.html')
+
+#当用户访问的视图没有权限或者调用abort（403）都会跳到此处
+@main.app_errorhandler(403)
+def error_handler_403(e):
+    return render_template('403.html')
+
+
+(2)app/templates/403.html
+
+{% extends 'base.html' %}
+{% block page_content %}
+    您好！一不小心您就没有权限了！抱歉！
+{% endblock %}
+
+
+
+(3)app/templates/404.html
+
+{% extends 'base.html' %}
+{% block page_content %}
+    您好！一不小心您就找不到了！抱歉！
+{% endblock %}
+
+
+
+(4)app/templates/500.html	
+
+{% extends 'base.html' %}
+{% block page_content %}
+    您好！一不小心服务器崩溃了！抱歉！
+{% endblock %}
+
+
+
+7.run.py
+from app import create_app
+from app import db
+from flask_script import Manager, Shell
+from app.models import Student, Teacher
+import pymysql
+from flask_migrate import Migrate,MigrateCommand
+
+pymysql.install_as_MySQLdb()
+
+app = create_app('develop')
+
+manager = Manager(app)
+
+#创建一个数据库迁移对象（修改表）
+migrate=Migrate(app,db)
+#增加一条命令叫做db
+manager.add_command('db',MigrateCommand)
+
+def make_context() :
+    return dict(Student=Student,Teacher=Teacher,db=db)
+
+manager.add_command('shell', Shell(make_context=make_context))
+
+@manager.command
+def test() :
+    import unittest
+    t = unittest.TestLoader()
+    t = t.discover('tests')
+    unittest.TextTestRunner().run(t)
+
+manager.run()
+
+#app.run(debug=True)
+
+
+
+#python虚拟环境
+#意义：不怕被损坏    每个项目一个虚拟环境，这样每个项目之间不会受到影响
+#做法：
+#1.制作python虚拟环境
+#    a.创建一个文件夹  vevn
+#    b.python -m venv venv
+#2.每次装包的时候要装到虚拟环境中
+#    venv\Scripts\pip.exe install flask-wtf .....
+#3.每次装包完成后都要生成需求文件
+#    venv\Scripts\pip.exe freeze > requirements.txt
+
+#如果不小心损坏了venv中的虚拟环境怎么办？
+#1.删掉venv中的所有文件
+#2.重新创建python虚拟环境
+#   python -m venv venv
+#3.安装原来项目需要的包
+#   venv\Scripts\pip.exe install -r requirements.txt
+#4.到此已经恢复了python虚拟环境
+
+#蓝本？蓝本就是一个包，通常一个app包中包含多个蓝本
+#意义：可以把不同功能的代码分别写到不同的蓝本中，可以减少代码耦合性，便于团队合作
+
+
+
+8.在app同级目录下创建tests文件夹 在tests文件夹中创建test.py:  测试文件
+
+import unittest
+from flask import current_app   #自动化测试框架 代理的是app  线程并发时不可以 
+from app import create_app,db
+from app.models import Student,Teacher,User
+
+
+class TestUserModel(unittest.TestCase) :
+    def test_password_set(self):
+        u1 = User(name='zhangsan')
+        u1.password = '123456'
+        self.assertTrue(u1.password_hash is not None)
+    def test_password_get(self):
+        u1 = User(name='zhangsan')
+        with self.assertRaises(AttributeError) :
+            u1.password
+    def test_check_password(self):
+        u1 = User(name='zhangsan')
+        u1.password = '123456'
+        self.assertTrue(u1.check_password('123456'))
+    def test_password_random(self):
+        u1 = User(name='zhangsan')
+        u2 = User(name='lisi')
+        u1.password = '123456'
+        u2.password = '123456'
+        self.assertTrue(u1.password_hash != u2.password_hash)
+
+
+
+#flask的测试框架会自动创建以下类的对象进行测试
+#每次测试都先调用setUp函数，然后再调用其它函数，最后调用tearDown函数
+class TestClass(unittest.TestCase):
+    def setUp(self):
+        self.app=create_app('test')
+        self.app_context=self.app.app_context()  #获取上下文 变量
+        self.app_context.push()     #存储上下文
+        db.create_all()
+        self.t=Teacher()
+        self.t.name='lizhiyong'
+        self.t.age=22
+        db.session.add(self.t)
+        db.session.commit()
+        self.s=Student()
+        self.s.name='zhangaa'
+        self.s.age='11'
+        self.s.teacher=self.t
+        db.session.add(self.s)
+        db.session.commit()
+
+    def tearDown(self):
+        db.session.remove()
+        #db.drop_all()
+        self.app_context.pop()
+
+    #本次目的是测试app是否能在test配置下创建
+    def test_app_exists(self):
+        #self.assertTrue如果参数表达式为真 代表测试成功 否则测试失败
+        self.assertTrue(current_app)
+    def test_app_is_test(self):
+        self.assertTrue(current_app.config['TEST'])
+
+    # 本次测试目的是测试Student模型和Teacher模型
+    def test_teacher_exists(self):
+        self.assertTrue(self.t is not None)
+        self.assertTrue(self.t.name == 'lizhiyong')
+
+    def test_student_exists(self):
+        self.assertTrue(self.s)
+        self.assertFalse(self.s.name == 'lizhiyong')
+        self.assertTrue(self.s.teacher.name == 'lizhiyong')
+
+
+
+9.app文件夹下models.py：
+from app import db
+from werkzeug.security import generate_password_hash,check_password_hash  #哈希密码  验证确认密码是否正确
+
+
+class User(db.Model) :
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64),default='张三')
+    password_hash = db.Column(db.String(128),default='123456')
+    def __str__(self):
+        return str(self.id) + ":" + self.id
+
+    @property
+    def password(self):           #添加装饰器后 函数变成类属性
+        raise AttributeError('password can not read')
+    @password.setter   #利用sha256+杂质串的方式产生hash值
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+    def check_password(self, password):     #验证密码是否正确
+        return check_password_hash(self.password_hash, password)
+
+
+class Student(db.Model) :
+    __tablename__='students'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), default='zhangsan')
+    age = db.Column(db.Integer, default=20)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'))
+
+class Teacher(db.Model) :
+    __tablename__='teachers'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), default='张三')
+    age = db.Column(db.Integer, default=30)
+    #lazy='dynamic' 代表访问students的时候返回的是一个query，可以进一步过滤
+    #如果没有lazy='dynamic'则访问students的时候返回的是一个列表
+    students = db.relationship('Student', backref='teacher', lazy='dynamic')
+
+
+
+数据库设置远程登陆：
+
+默认情况下Mysql的root用户不支持远程登陆，使用以下命令授权
+[root@embsky ~]# mysql -uroot -p
+MariaDB [mysql] > use mysql
+MariaDB [mysql] > GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '123456' ;
+MariaDB [mysql] > flush privileges;
+
+
+
+数据库迁移使用  
+(1) venv\Scripts\python.exe run.py db init     #第一次使用时需要 初始化的
+(2) venv\Scripts\python.exe run.py db migrate  #统计  统计新增的
+(3) venv\Scripts\python.exe run.py db upgrade  #更新 
+
+
+
+
+
+
+
+
+
+
+
+
+	    
